@@ -1,0 +1,544 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Caption("NCMR")
+Gui.Form..Size(17670,10485)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Form_UnLoad)
+Gui.Form.gsQual.Create(GsGridControl)
+Gui.Form.gsQual.Size(17385,8640)
+Gui.Form.gsQual.Position(60,1290)
+Gui.Form.gsQual.Event(RowCellClick,Hyperlinks)
+Gui.Form.picGSSLOGO.Create(PictureBox)
+Gui.Form.picGSSLOGO.Size(6240,1230)
+Gui.Form.picGSSLOGO.Position(5580,15)
+Gui.Form.cmdRefresh.Create(Button)
+Gui.Form.cmdRefresh.Size(1035,375)
+Gui.Form.cmdRefresh.Position(60,795)
+Gui.Form.cmdRefresh.Caption("Refresh")
+Gui.Form.cmdRefresh.Event(Click,cmdRefresh_Click)
+Gui.Form.Export.Create(Button)
+Gui.Form.Export.Size(855,375)
+Gui.Form.Export.Position(1245,795)
+Gui.Form.Export.Caption("Export")
+Gui.Form.Export.Event(Click,Export)
+Gui.Form.proBar.Create(ProgressBar)
+Gui.Form.proBar.Visible(False)
+Gui.Form.proBar.Size(2955,105)
+Gui.Form.proBar.Position(2175,1020)
+Gui.Form.dtpStart.Create(DatePicker)
+Gui.Form.dtpStart.Size(1980,285)
+Gui.Form.dtpStart.Position(90,375)
+Gui.Form.dtpStart.Event(LostFocus,dtpStart_LostFocus)
+Gui.Form.dtpEnd.Create(DatePicker)
+Gui.Form.dtpEnd.Size(1935,285)
+Gui.Form.dtpEnd.Position(2235,375)
+Gui.Form.lbl1.Create(Label,"Start",True,585,255,0,90,165,True,0,"Arial",8,-2147483633,0)
+Gui.Form.lbl2.Create(Label,"End",True,585,255,0,2235,165,True,0,"Arial",8,-2147483633,0)
+Gui.ProgressForm..Create
+Gui.ProgressForm..Caption("Progress")
+Gui.ProgressForm..Size(15360,1155)
+Gui.ProgressForm..MinX(0)
+Gui.ProgressForm..MinY(0)
+Gui.ProgressForm..Position(0,0)
+Gui.ProgressForm..BackColor(-2147483633)
+Gui.ProgressForm..MousePointer(0)
+Gui.ProgressForm..Event(UnLoad,ProgressForm_UnLoad)
+Gui.ProgressForm.proBar.Create(ProgressBar)
+Gui.ProgressForm.proBar.Size(14535,105)
+Gui.ProgressForm.proBar.Position(315,255)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.Return.Declare(string)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'BN, Oct 11, 2019
+'Customer: RookWood Pottery Company
+'This program displays Good and Scrap pieces and calculate percentage.
+'Data is pulled from Job_Detail for Direct Labor sequences and other than 99 sequences
+'Sequences with both Good and Scrap equal to 0 will not be pulled in
+
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	V.Local..BulkDeclareString(sIcon,sGssLogo)
+	
+	Function.ODBC.Connection!con.OpenCompanyConnection(300)
+
+	'check directory
+	F.Intrinsic.Control.CallSub("Check_And_Create_Custom_Folder")
+
+	'Icon and Logo
+	F.Intrinsic.String.Build("{0}\GAB\GAS\gss2.ico",V.Caller.PluginsDir,v.Local.sIcon)
+	F.Intrinsic.String.Build("{0}\GAB\GAS\GAB_GSS_Logo_Green_Dash.png",V.Caller.PluginsDir,V.Local.sGssLogo)
+	Gui.Form..Icon(V.Local.sIcon)
+	Gui.Form.picGSSLogo.Picture(V.Local.sGssLogo)	
+	'anchor form
+	gui.Form.gsQual.Anchor(15)
+	Gui.Form.picGSSLogo.Anchor(1)		
+
+	'grid data	
+	gui.Form..Show
+	gui.ProgressForm..Visible(False)	
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Subroutine called from:{6}{1}Error Occurred: {3}{1}Description: {4}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,v.Ambient.SubroutineCalledFrom,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Check_And_Create_Custom_Folder.Start
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+	v.Local.bExist.Declare
+	v.Local.sFile.Declare
+	v.Local.sDir.Declare
+	
+	f.Intrinsic.String.Build("{0}\Custom",v.Caller.GlobalDir,v.Local.sDir)
+	f.Intrinsic.File.DirExists(v.Local.sDir,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDir)
+	f.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.String.Build("{0}\Custom\5706",v.Caller.GlobalDir,v.Local.sDir)
+	f.Intrinsic.File.DirExists(v.Local.sDir,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDir)
+	f.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.String.Build("{0}\Custom\5706\{1}",v.Caller.GlobalDir,v.Caller.CompanyCode,v.Local.sDir)
+	f.Intrinsic.File.DirExists(v.Local.sDir,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDir)
+	f.Intrinsic.Control.EndIf	
+	
+	f.Intrinsic.String.Build("{0}\Custom\5706\{1}\Transaction Log",v.Caller.GlobalDir,v.Caller.CompanyCode,v.Local.sDir)
+	f.Intrinsic.File.DirExists(v.Local.sDir,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDir)
+	f.Intrinsic.Control.EndIf	
+	
+	f.Intrinsic.String.Build("{0}\Custom\5706\{1}\GAB Error Log",v.Caller.GlobalDir,v.Caller.CompanyCode,v.Local.sDir)
+	f.Intrinsic.File.DirExists(v.Local.sDir,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDir)
+	f.Intrinsic.Control.EndIf		
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: 5706 {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry	
+Program.Sub.Check_And_Create_Custom_Folder.End
+
+Program.Sub.Write_GAB_Error_Log.Start
+'Parameters: sError
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+	v.Local.sFile.Declare
+	v.Local.sContent.Declare	
+
+	'Write error log file
+	f.Intrinsic.String.Build("User: {1}{0}Terminal: {2}{0}",v.Ambient.NewLine,v.Caller.User,v.Caller.Terminal,v.Local.sContent)
+	f.Intrinsic.String.Build("{0}{1}{2}{3}",v.Local.sContent,v.Ambient.Now,v.Ambient.NewLine,v.Args.sError,v.Local.sContent)
+	f.Intrinsic.String.Build("{0}\Custom\5706\{1}\GAB Error Log\{2}_{3}_{4}_{5}.txt",v.Caller.GlobalDir,v.Caller.CompanyCode,v.Caller.User,v.Caller.Terminal,v.Ambient.Date.FormatYYYYMMDD,v.Ambient.Now.FormatHHNNSS,v.Local.sFile)
+	f.Intrinsic.File.String2File(v.Local.sFile,v.Local.sContent)
+	
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub("Unload")
+f.Intrinsic.Control.EndTry
+Program.Sub.Write_GAB_Error_Log.End
+
+Program.Sub.cmdRefresh_Click.Start
+	F.Intrinsic.Control.CallSub("Load")
+Program.Sub.cmdRefresh_Click.End
+
+Program.Sub.Load.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	f.Intrinsic.UI.InvokeWaitDialog("Loading...")	
+	v.Local.dStart.Declare
+	v.Local.dEnd.Declare
+	v.Local.sStart.Declare
+	v.Local.sEnd.Declare
+	v.Local.sSQL.Declare
+	v.Local.dStart.Set(v.Screen.Form!dtpStart.Value)
+	v.Local.dEnd.Set(v.Screen.Form!dtpEnd.Value)
+	v.Local.sStart.Set(v.Local.dStart.formatYYYYMMDD)
+	v.Local.sEnd.Set(v.Local.dEnd.formatYYYYMMDD)
+	
+	f.Intrinsic.String.Build("select Job + Suffix as JobSuffix,Case When Quality_Number <> '0000000' then Quality_Number Else '' End as Control_Number,If(Date_Sequence = '','',If( SubString(Date_Sequence,1,2) < '80',SubString(Date_Sequence,3,2) + '/' + Right(Date_Sequence,2)+ '/' +  '20' + Left(Date_Sequence,2) ,SubString(Date_Sequence,3,2) + '/' + Right(Date_Sequence,2)+ '/' +  '19' + Left(Date_Sequence,2))) as   Date_Entered,empl as Employee,Employee as Employee_Name,Dept_Emp as Department,JOB,SUFFIX,Seq as Sequence,Machine as WorkCenter,Dept_Workcenter as WC_Dept,rtrim(Scrap_reason) as Scrap_Code,Pieces_Compltd as Good,Pieces_Scrap as Scrap  from job_detail  where  date_sequence between '{0}' and '{1}'  and   LMO = 'L' and  flag_indirect = 'D' and not (Pieces_Compltd = 0 and Pieces_Scrap = 0)",v.Local.sStart.Right6,v.Local.sEnd.Right6,v.Local.sSQL)
+	'Header Table
+	F.Data.DataTable.CreateFromSQL("QUALITY", "con", v.Local.sSQL, True)
+	'Header Part	
+	f.Data.DataTable.CreateFromSQL("Parts","con","Select Job + Suffix as JobSuffix,Part,Description from V_Job_header",True)
+	f.Intrinsic.Control.CallSub("Add_Columns_Using_Dictionaries","SourceTable","Parts","KeyColumn","JobSuffix","ColumnList","Part~String~,Description~String~","TargetTable","QUALITY")
+	f.Data.DataTable.Close("Parts")
+	'Quality Description	
+	F.Data.DataTable.CreateFromSQL("QUAL_DESC", "con", "Select rtrim(Discrep_Code) as Scrap_Code,Discrep_Desc as SCRAPDESC From QUALITY_DISCRP_CD  Where SYS In ( 'QUA' , 'REJ') And SUB_SYS In  ('DIS' , 'CDE') ", True)
+	f.Intrinsic.Control.CallSub("Add_Columns_Using_Dictionaries","SourceTable","QUAL_DESC","KeyColumn","Scrap_Code","ColumnList","SCRAPDESC~String~","TargetTable","QUALITY")
+	f.Data.DataTable.Close("QUAL_DESC")
+	
+	f.Data.DataTable.AddExpressionColumn("Quality","Percentage","float","IIF(Good <> 0,100 * Scrap/Good,100)")
+	
+	F.Intrinsic.Control.If(V.DataTable.NCMR.Exists)
+		F.Data.DataTable.Close("NCMR")
+	f.Intrinsic.Control.EndIf	
+	f.Data.DataView.Create("Quality","Qualitydv",22,"","Date_Entered,Part,Job,Suffix,Sequence,Employee")
+	f.Data.DataView.ToDataTable("Quality","Qualitydv","NCMR",True)
+	f.Data.DataTable.Close("Quality")
+	
+	f.Intrinsic.UI.ChangeWaitStatus("Formating grid...")
+
+	gui.Form.gsQual.AddGridViewFromDataTable("GVMain","NCMR")
+	f.Intrinsic.Control.CallSub("Format_gsQual")
+	gui.Form.gsQual.MainView("GVMain")
+	
+	f.Intrinsic.UI.CloseWaitDialog
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Load.End
+
+Program.Sub.Add_Columns_Using_Dictionaries.Start
+'Parameters: SourceTable,KeyColumn,ColumnList(ColumnName~DataType~DefaultValue),TargetTable
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+	v.Local.sColumns.Declare
+	v.Local.sDataType.Declare
+	v.Local.iCnt.Declare
+	v.Local.sHold.Declare
+	v.Local.sCol.Declare
+	v.Local.sDefaultReturn.Declare
+	
+	f.Intrinsic.String.Split(v.Args.ColumnList,",",v.Local.sColumns)
+	f.Intrinsic.Control.For(v.Local.iCnt,0,v.Local.sColumns.UBound,1)
+		f.Intrinsic.String.Split(v.Local.sColumns(v.Local.iCnt),"~",v.Local.sHold)
+		v.Local.sCol.Set(v.Local.sHold(0).Trim)
+		v.Local.sDataType.Set(v.Local.sHold(1).Trim)
+		v.Local.sDefaultReturn.set(v.Local.sHold(2).Trim)
+		f.Data.Dictionary.CreateFromDataTable(v.Local.sCol,v.Args.SourceTable,v.Args.KeyColumn,v.Local.sCol)
+		f.Data.Dictionary.SetDefaultReturn(v.Local.sCol,v.Local.sDefaultReturn)
+		f.Data.DataTable.AddColumn(v.Args.TargetTable,v.Local.sCol,v.Local.sDataType,v.Local.sDefaultReturn)
+		f.Data.DataTable.FillFromDictionary(v.Args.TargetTable,v.Local.sCol,v.Args.KeyColumn,v.Local.sCol)
+		f.Data.Dictionary.Close(v.Local.sCol)	
+	f.Intrinsic.Control.Next(v.Local.iCnt)	
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Add_Columns_Using_Dictionaries.End
+
+Program.Sub.Format_gsQual.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	V.Local.bInGroup.Declare
+	v.Local.sSQL.Declare
+	v.Local.sRet.Declare
+		
+	gui.Form.gsQual.SuspendLayout()
+	'General format for the grid
+	gui.Form.gsQual.SetGridViewProperty("GVMain","AllowSort",True)
+	gui.Form.gsQual.SetGridViewProperty("GVMain","AllowFilter",True)
+	gui.Form.gsQual.SetGridViewProperty("GVMain","OptionsFindAlwaysVisible",True)
+	gui.Form.gsQual.SetGridViewProperty("GVMain","EnableAppearanceOddRow",True)
+	gui.Form.gsQual.SetGridViewProperty("GVMain","OptionsViewShowAutoFilterRow",True)
+	gui.Form.gsQual.SetGridViewProperty("GVMain","AllowColumnResizing",True)
+	gui.Form.gsQual.SetGridViewProperty("GVMain","OptionsViewColumnAutoWidth",False)	
+	gui.Form.gsQual.SetGridViewProperty("GVMain","ColumnPanelRowHeight","50")	
+	gui.Form.gsQual.SetGridViewProperty("GVMain","OptionsViewShowGroupPanel",True)
+	
+	gui.Form.gsQual.SetColumnProperty("GVMain","JobSuffix","Visible",False)
+	
+	'VisibleIndex
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","CONTROL_NUMBER,Date_Entered,Employee,Employee_Name,Department,JOB,Suffix,Sequence,Part,Description,WorkCenter,WC_Dept,Scrap_code,SCRAPDESC,Good,Scrap,Percentage","sProperty","VisibleIndex")		
+	'caption
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","CONTROL_NUMBER@!@NCMR,SCRAP_CODE@!@Scap Code,SCRAPDESC@!@Scrap Description,JOB@!@Job,Suffix@!@Suf.,Sequence@!@Seq.,WORKCENTER@!@Work Center,WC_Dept@!@WC Dept.,DEPARTMENT@!@Empl Dept.,Description@!@Part Description,Date_Entered@!@Date Entered,Employee_Name@!@Employee Name,Employee@!@Empl.,Part@!@Part,Percentage@!@Percentage","sProperty","Caption")
+	'HeaderBold
+	
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Good,Scrap,WC_Dept,CONTROL_NUMBER,Date_Entered,Employee,Employee_Name,JOB,Suffix,Sequence,Part,Description,WorkCenter,Department,Scrap_code,SCRAPDESC,Percentage","sProperty","HeaderFontBold")
+	'HeaderWordWrap
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Good,Scrap,WC_Dept,CONTROL_NUMBER,Date_Entered,Employee,Employee_Name,JOB,Suffix,Sequence,Part,Description,WorkCenter,Department,Scrap_code,SCRAPDESC,Percentage","sProperty","HeaderWordWrap")
+	'HeaderAllign_Top
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Good,Scrap,WC_Dept,CONTROL_NUMBER,Date_Entered,Employee,Employee_Name,JOB,Suffix,Sequence,Part,Description,WorkCenter,Department,Scrap_code,SCRAPDESC,Percentage","sProperty","HeaderAllign_Top")
+	'set for hyperlink
+	
+	gui.Form.gsQual.SetColumnProperty("GVMain", "PART", "AllowEdit",False)
+	gui.Form.gsQual.SetColumnProperty("GVMain", "PART", "ReadOnly", False)
+	gui.Form.gsQual.SetColumnProperty("GVMain", "CONTROL_NUMBER", "AllowEdit",False)
+	gui.Form.gsQual.SetColumnProperty("GVMain", "CONTROL_NUMBER", "ReadOnly", False)
+	'hyperlink color
+	gui.Form.gsQual.SetColumnProperty("GVMain", "CONTROL_NUMBER", "CellForeColor","Blue")
+	gui.Form.gsQual.SetColumnProperty("GVMain", "PART", "CellForeColor","Blue")	
+	'width
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Employee,Job,Suffix,Sequence","sProperty","MinWidth","sWidth","50")
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Job,Suffix,Sequence,WorkCenter,Department,Scrap_Code","sProperty","Width","sWidth","50")
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Date_Entered","sProperty","MinWidth","sWidth","80")
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Part","sProperty","MinWidth","sWidth","160")
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Employee_Name,Description,ScrapDesc","sProperty","MinWidth","sWidth","210")
+	
+	'HeaderHAlignment
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","WC_Dept,CONTROL_NUMBER,Date_Entered,WorkCenter,DEPARTMENT,SCRAP_CODE,Employee,Job,Suffix,Sequence","sProperty","HeaderAllign_Center")
+	'HeaderHAlignment
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Good,Scrap,Percentage","sProperty","HeaderAllign_Far")	
+	'CellHAlignment_Center
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","WC_Dept,CONTROL_NUMBER,Date_Entered,WorkCenter,DEPARTMENT,SCRAP_CODE,Employee,Job,Suffix,Sequence","sProperty","CellHAlignment_Center")	
+	'date format
+	gui.Form.gsQual.SetColumnProperty("GVMain", "Date_Entered", "DisplayCustomDatetime", "d")	
+	'Decimal 1
+	f.Intrinsic.Control.CallSub(FormatBulk,"GS","gsQual","GV","GVMain","sInputColumns","Good,Scrap,Percentage","sProperty","Decimal_1")
+	gui.Form.gsQual.AddSummaryItem("GVMain","Good","Good","Sum","","","n")
+	gui.Form.gsQual.AddSummaryItem("GVMain","Scrap","Scrap","Sum","","","n")
+	gui.Form.gsQual.AddSummaryItem("GVMain","Percentage","Scrap","Average","","","n")
+
+	gui.Form.gsQual.AddGridGroupSummaryItem("GVMain","Good","Good","Sum","       Good: ","","n2")	
+	gui.Form.gsQual.AddGridGroupSummaryItem("GVMain","Scrap","Scrap","Sum","       Scrap: ","","n2")
+	gui.Form.gsQual.AddGridGroupSummaryItem("GVMain","Percentage","Percentage","Average","       Avg Percentage: ","","n2")
+	
+	gui.Form.gsQual.ResumeLayout()
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Format_gsQual.End
+
+Program.Sub.FormatBulk.Start
+f.Intrinsic.Control.Try
+	V.Local..BulkDeclareString(sError,sColumns,sHold)
+	v.Local..BulkDeclareLong(iCnt)
+
+	f.Intrinsic.String.Split(v.Args.sInputColumns,",",v.Local.sColumns)
+	f.Intrinsic.Control.For(v.Local.iCnt,0,v.Local.sColumns.UBound,1)
+		F.Intrinsic.Control.SelectCase(v.Args.sProperty)
+			F.Intrinsic.Control.Case("MinWidth")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"MinWidth",v.Args.sWidth)
+			F.Intrinsic.Control.Case("MaxWidth")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"MaxWidth",v.Args.sWidth)
+			F.Intrinsic.Control.Case("Width")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"Width",v.Args.sWidth)
+			F.Intrinsic.Control.Case("Invisible")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"Visible",False)
+			F.Intrinsic.Control.Case("VisibleIndex")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"VisibleIndex",v.Local.iCnt)
+			F.Intrinsic.Control.Case("Caption")
+				f.Intrinsic.String.Split(v.Local.sColumns(v.Local.iCnt),"@!@",v.Local.sHold)
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sHold(0),"Caption",v.Local.sHold(1))
+			F.Intrinsic.Control.Case("HeaderAllign_Far")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"HeaderHAlignment","Far")
+			F.Intrinsic.Control.Case("HeaderAllign_Center")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"HeaderHAlignment","Center")
+			F.Intrinsic.Control.Case("HeaderAllign_Top")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"HeaderVAlignment","Top")
+			F.Intrinsic.Control.Case("HeaderFontBold")	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"HeaderFontBold",True)
+			F.Intrinsic.Control.Case("HeaderWordWrap")	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"HeaderWordWrap","Wrap")
+			F.Intrinsic.Control.Case("CellHAlignment_Center")	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"CellHAlignment","Center")
+			F.Intrinsic.Control.Case("CellHAlignment_Far")	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"CellHAlignment","Far")
+			F.Intrinsic.Control.Case("Decimal_1")	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"DisplayCustomNumeric","###,###,###,##0.00")
+			f.Intrinsic.Control.Case("For_CellValue_Changed")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"AllowEdit",True)	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"ReadOnly",False)
+			f.Intrinsic.Control.Case("For_RowCell_Click")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"AllowEdit",False)	
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"ReadOnly",True)
+			f.Intrinsic.Control.Case("DisplayCustomDatetime")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"DisplayCustomDatetime","d")	
+			f.Intrinsic.Control.Case("SummaryItem")
+				f.Intrinsic.String.Build("Sum_{0}",v.Local.sColumns(v.Local.iCnt),v.Local.sHold)
+				gui.Form.[v.Args.GS].AddSummaryItem(v.Args.GV,v.Local.sColumns(v.Local.iCnt),v.Local.sHold,"Sum","","","n")
+			f.Intrinsic.Control.Case("FixedColumn_Left")
+				gui.Form.[v.Args.GS].SetColumnProperty(v.Args.GV,v.Local.sColumns(v.Local.iCnt),"Fixed","Left")					
+			F.Intrinsic.Control.EndSelect		
+	f.Intrinsic.Control.Next(v.Local.iCnt)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Subroutine called from:{6}{1}Error Occurred: {3}{1}Description: {4}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,v.Ambient.SubroutineCalledFrom,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+
+Program.Sub.FormatBulk.End
+
+Program.Sub.Refresh.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+	F.Intrinsic.Control.CallSub(Load)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Refresh.End
+
+Program.Sub.Export.Start
+F.Intrinsic.Control.Try	
+	V.Local.sError.Declare	
+ 	V.Local.sFileExport.Declare
+    V.Local.bExcel.Declare
+    V.Local.bFileLocked.Declare
+    V.Local.sMsg.Declare
+
+    F.Automation.MSExcel.CheckPresence(V.Local.bExcel)
+
+    F.Intrinsic.Control.If(V.Local.bExcel)
+        F.Intrinsic.String.Build("{0}\Quality_{1}.xlsx",V.Caller.LocalGssTempDir,v.Ambient.Now.FormatMMDDYYYYHhNnSs,V.Local.sFileExport)
+        F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+        F.Intrinsic.Control.If(V.Local.bFileLocked)
+            F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+            F.Intrinsic.UI.Msgbox(V.Local.sMsg,"File In Use")
+        F.Intrinsic.Control.Else
+            gui.Form.gsQual.Export(V.Local.sFileExport,"xlsx")
+            F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+        F.Intrinsic.Control.EndIf
+    F.Intrinsic.Control.Else
+        F.Intrinsic.String.Build("{0}\Quality_{1}.xlsx",V.Caller.LocalGssTempDir,v.Ambient.Now.FormatMMDDYYHhNnSs,V.Local.sFileExport)
+        F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+        F.Intrinsic.Control.If(V.Local.bFileLocked)
+            F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+            F.Intrinsic.UI.Msgbox(V.Local.sMsg,"File In Use")
+        F.Intrinsic.Control.Else
+            gui.Form.gsQual.Export(V.Local.sFileExport,"csv")
+        F.Intrinsic.Control.EndIf
+        F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+    F.Intrinsic.Control.EndIf	
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Export.End
+
+Program.Sub.Hyperlinks.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+V.Local.sTemp.Declare
+'hyperlinks
+F.Intrinsic.Control.If(Variable.Args.Column,=,"CONTROL_NUMBER")
+	'Customer does not use Dispose screen so deactivate this
+	'Quality>File>Quality Reject/Disposition Open
+	'F.Intrinsic.String.Build("{0}!*!{1}", V.Caller.CompanyCode,Variable.Args.CellValue,V.Local.sTemp)
+	'Function.Global.General.CallWrapperSync("2001", V.Local.sTemp)
+F.Intrinsic.Control.ElseIf(Variable.Args.Column.UCase,=,"PART")	
+	'opens the inventory master
+	F.Intrinsic.String.Build("{0}!*!O!*!*!*ZDR*!*!*!*!*ZDR*!*!*!{1}!*!{2}", V.Caller.CompanyCode,Variable.Args.CellValue, "  ", V.Local.sTemp)
+	Function.Global.General.CallWrapperSync("3500", V.Local.sTemp)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Hyperlinks.End
+
+Program.Sub.Form_UnLoad.Start
+f.Intrinsic.Control.CallSub("Unload")
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.Serialize.Start
+f.Intrinsic.Control.Try
+	V.Local.sError.Declare	
+	V.Local.sSerialize.Declare
+	v.Local.sSQL.Declare	
+	v.Local.sUserID.Declare
+	
+	F.Global.Security.GetUserID(v.Caller.User,v.Caller.CompanyCode,v.Local.sUserID)
+	
+	'Delete old registry records
+	F.ODBC.Connection!common.OpenConnection(V.Ambient.Ccon,V.Ambient.Cuser,V.Ambient.Cpass)		
+	f.Intrinsic.String.Build("Delete From Gs_Registry Where User_ID = '{0}' and Company = '{1}' and Reg_ID = 5706 and Seq = '1001';",v.Local.sUserID,v.Caller.CompanyCode,v.Local.sSQL)
+	F.ODBC.Connection!common.Execute(v.Local.sSQL)
+	F.ODBC.Connection!common.Close
+	'GVMain
+	Gui.Form.gsQual.Serialize("GVMain",V.Local.sSerialize)
+	F.Global.Registry.AddValue(V.Caller.User,V.Caller.CompanyCode,"GVMain",5706,1001,False,"Serialize",False,0,-999.0,1/1/1980,12:00:00 AM,V.Local.sSerialize)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Serialize.End
+
+Program.Sub.Deserialize.Start
+f.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	V.Local.sSerialize.Declare	
+	
+	'gvAllShip
+	F.Global.Registry.ReadValue(V.Caller.User,V.Caller.CompanyCode,"GVMain",5706,1001,6,"",V.Local.sSerialize)
+	F.Intrinsic.Control.If(V.Local.sSerialize.Trim,<>,"")
+		Gui.Form.gsQual.Deserialize(V.Local.sSerialize)
+	F.Intrinsic.Control.EndIf	
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Deserialize.End
+
+Program.Sub.UnLoad.Start
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+
+	F.Intrinsic.Control.If(V.ODBC.con.State,=,1)
+		F.ODBC.Connection!con.close
+	F.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Subroutine called from:{6}{1}Error Occurred: {3}{1}Description: {4}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,v.Ambient.SubroutineCalledFrom,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Write_GAB_Error_Log","sError",v.Local.sError)
+	F.Intrinsic.Control.End	
+F.Intrinsic.Control.EndTry
+Program.Sub.UnLoad.End
+
+Program.Sub.ProgressForm_UnLoad.Start
+gui.ProgressForm..Visible(False)
+Program.Sub.ProgressForm_UnLoad.End
+
+Program.Sub.dtpStart_LostFocus.Start
+v.Local.dStart.Declare
+v.Local.dEnd.Declare
+v.Local.dStart.Set(v.Screen.Form!dtpStart.Value)
+f.Intrinsic.Date.EndOfMonth(v.Local.dStart,v.Local.dEnd)
+gui.Form.dtpEnd.Value(v.Local.dEnd)
+Program.Sub.dtpStart_LostFocus.End
+
+
+
+
